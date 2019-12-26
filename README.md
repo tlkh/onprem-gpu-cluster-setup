@@ -34,16 +34,17 @@ sudo su root
 # as root user
 apt-get update && apt-get install -y curl
 # baller one liner move
-export NODE_SETUP_SCRIPT=https://raw.githubusercontent.com/OpenSUTD/onprem-kubeflow-setup/master/setup_node.sh
+export NODE_SETUP_SCRIPT=https://raw.githubusercontent.com/NVAITC/onprem-gpu-cluster-setup/master/setup_node.sh
 curl $NODE_SETUP_SCRIPT | bash
 # system will automatically reboot after done
 ```
 
 **Post Install for GPU Nodes**
 
-After system reboot, perform the follow step to set the default container runtime to the NVIDIA Container Runtime.
+After system reboot, perform the follow step to set the default container runtime to the NVIDIA Container Runtime and allow your default user to use Docker without `sudo`:
 
 ```shell
+sudo usermod -aG docker $USER
 sudo nano /etc/docker/daemon.json
 ```
 
@@ -78,7 +79,10 @@ mkdir -p $HOME/.kube
 sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
 sudo chown $(id -u):$(id -g) $HOME/.kube/config
 
-kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/62e44c867a2846fefb68bd5f178daf4da3095ccb/Documentation/kube-flannel.yml
+# you might want to check for an updated Flannel:
+# https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/create-cluster-kubeadm/#pod-network
+
+kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/2140ac876ef134e0ed5af15c65e414cf26827915/Documentation/kube-flannel.yml
 
 # allow pods to schedule on master
 kubectl taint nodes --all node-role.kubernetes.io/master-
@@ -90,7 +94,7 @@ kubectl get pods --all-namespaces
 **Optional: deploy Kubernetes Dashboard**
 
 ```shell
-kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v1.10.1/src/deploy/recommended/kubernetes-dashboard.yaml
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.0.0-beta8/aio/deploy/recommended.yaml
 ```
 
 For setup instructions, see: https://github.com/kubernetes/dashboard/wiki/Creating-sample-user
@@ -107,8 +111,10 @@ Run `kubectl get nodes` as a sanity check. Every node should be in `Ready` state
 Deploy NVIDIA device plugin:
 
 ```shell
-kubectl create -f https://raw.githubusercontent.com/NVIDIA/k8s-device-plugin/1.0.0-beta/nvidia-device-plugin.yml
+kubectl create -f https://raw.githubusercontent.com/NVIDIA/k8s-device-plugin/1.0.0-beta4/nvidia-device-plugin.yml
 ```
+
+You can check for a newer version of the plugin [here](https://github.com/NVIDIA/k8s-device-plugin#enabling-gpu-support-in-kubernetes).
 
 Within 60s, the GPUs should be visible to Kubernetes. You can run the follow command to check:
 
@@ -118,20 +124,18 @@ kubectl get nodes -o=custom-columns=NAME:.metadata.name,GPUs:.status.capacity.'n
 
 ## Install and Initialize Helm
 
+Before following the instructions, you can check for the latest version of Helm [here](https://github.com/helm/helm/releases). The instructions below work for Helm 3.x and not 2.x!
+
 ```shell
-# double check the latest version
-wget https://get.helm.sh/helm-v2.14.3-linux-amd64.tar.gz
-tar -xvf helm-v2.14.3-linux-amd64.tar.gz linux-amd64/
+wget https://get.helm.sh/helm-v3.0.2-linux-amd64.tar.gz
+tar -xvf helm-v3.0.2-linux-amd64.tar.gz linux-amd64/
 chmod +x linux-amd64/helm
 sudo mv linux-amd64/helm /usr/local/bin/helm
 
-helm init --history-max 200
-helm repo update
+# initialize Helm
 
-kubectl create serviceaccount --namespace kube-system tiller
-kubectl create clusterrolebinding tiller-cluster-rule --clusterrole=cluster-admin --serviceaccount=kube-system:tiller
-kubectl patch deploy --namespace kube-system tiller-deploy -p '{"spec":{"template":{"spec":{"serviceAccount":"tiller"}}}}'
-kubectl patch deployment tiller-deploy --namespace=kube-system --type=json --patch='[{"op": "add", "path": "/spec/template/spec/containers/0/command", "value": ["/tiller", "--listen=localhost:44134"]}]'
+helm repo add stable https://kubernetes-charts.storage.googleapis.com/
+helm repo update
 ```
 
 ## Deploy Storage Backend
@@ -194,9 +198,9 @@ For more information on the helm chart, see [helm/charts/tree/master/stable/mood
 export MOODLE_ADMIN=admin
 export MOODLE_PASSWORD=password
 
-helm install --name moodle \
+helm install \
   --set moodleUsername=$MOODLE_ADMIN,moodlePassword=$MOODLE_PASSWORD,metrics.enabled=true \
-  stable/moodle
+  moodle stable/moodle
 ```
 
 After a while, Moodle will start up. Run `kubectl get pods` to check.
@@ -225,7 +229,7 @@ hub:
     OAUTH2_AUTHORIZE_URL: http://proxy-ip:5050/local/oauth/login.php?client_id=jupyterhub&response_type=code
   extraConfig:
         announcementConfig: |
-          c.JupyterHub.template_vars = {"announcement": "Need help? <a href="">Get help here</a>."}
+          c.JupyterHub.template_vars = {"announcement": "New here? <a href=''>Get help here</a>"}
 proxy:
   secretToken: # generate this with `openssl rand -hex 32`
 auth:
@@ -298,7 +302,7 @@ You'll need Helm (already configured in the previous step). Check for the latest
 helm repo add jupyterhub https://jupyterhub.github.io/helm-chart/
 helm repo update
 
-export RELEASE=0.9-dcde99a
+export RELEASE=0.9.0-alpha.1.104.d37322a
 
 helm upgrade --install jhub jupyterhub/jupyterhub \
   --version=$RELEASE \
@@ -409,5 +413,4 @@ This Nginx configuration will create the following proxy:
 
 * Configure Moodle users
 * Monitoring
-
 
