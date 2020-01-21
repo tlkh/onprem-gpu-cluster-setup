@@ -45,7 +45,7 @@ TensorBoard works as well.
 
 ## Desktop 
 
-under "New", you will have an additional option for "VNC Desktop". Click on that, and a new browser tab will open with your virtual desktop interface.
+Under "New" menu, you will an additional option for "VNC Desktop". Click on that, and a new browser tab will open with your virtual desktop interface.
 
 ![new desktop](images/new_desktop.jpg)
 
