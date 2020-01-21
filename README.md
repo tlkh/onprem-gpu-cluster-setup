@@ -213,6 +213,7 @@ Install the Moodle OAuth plugin:
 1. Download: https://github.com/projectestac/moodle-local_oauth/archive/master.zip
 2. Install by uploading the zip file at `Site administration > Plugins > Install plugins`
 3. Head over to `Site administration > Server > OAuth provider settings > Add new client` 
+4. Set callback URL to `http://proxy-ip/hub/oauth_callback`
 
 
 
