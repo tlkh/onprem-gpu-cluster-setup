@@ -251,14 +251,14 @@ auth:
 singleuser:
   profileList:
     - display_name: "sutd.gpu.1xlarge"
-      description: "1 GPU, 8 cores and 32GB RAM. The <code>nvaitc/ai-lab</code> image provides TensorFlow, PyTorch and various data science packages, VS Code and a virtual desktop."
+      description: "1 GPU, 4 cores and 32GB RAM. The <code>nvaitc/ai-lab</code> image provides TensorFlow, PyTorch and various data science packages, VS Code and a virtual desktop."
       kubespawner_override:
         image: nvaitc/ai-lab:20.01-vnc
         extra_resource_limits:
           nvidia.com/gpu: "1"
       default: true
     - display_name: "sutd.cpu.1xlarge"
-      description: "8 cores and 32GB RAM. The <code>jupyter/datascience-notebook</code> image provides various Python data science packages."
+      description: "4 cores and 32GB RAM. The <code>jupyter/datascience-notebook</code> image provides various Python data science packages."
       kubespawner_override:
         image: jupyter/datascience-notebook:latest
   storage:
@@ -273,10 +273,10 @@ singleuser:
     JUPYTER_ENABLE_LAB: "yes"
   memory:
     limit: 32G
-    guarantee: 16G
+    guarantee: 8G
   cpu:
-    limit: 16
-    guarantee: 4
+    limit: 6
+    guarantee: 2
   networkPolicy:
     enabled: true
     egress:
