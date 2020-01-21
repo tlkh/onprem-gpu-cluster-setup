@@ -206,7 +206,7 @@ After a while, Moodle will start up. Run `kubectl get pods` to check.
 
 **Part 2: Install OAuth Plugin**
 
-Reference: https://github.com/jupyterhub/oauthenticator#moodle-setup
+Reference: https://github.com/jupyterhub/oauthenticator/blob/master/docs/source/getting-started.rst#moodle-setup
 
 Install the Moodle OAuth plugin:
 
