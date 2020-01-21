@@ -197,9 +197,8 @@ For more information on the helm chart, see [helm/charts/tree/master/stable/mood
 ```shell
 export MOODLE_ADMIN=admin
 export MOODLE_PASSWORD=password
-
 helm install \
-  --set moodleUsername=$MOODLE_ADMIN,moodlePassword=$MOODLE_PASSWORD,metrics.enabled=true \
+  --set moodleUsername=$MOODLE_ADMIN,moodlePassword=$MOODLE_PASSWORD,metrics.enabled=true,resources.requests.cpu=2,resources.requests.memory=2Gi,mariadb.requests.resources.cpu=2,mariadb.requests.resources.memory=2Gi moodle stable/moodle \
   moodle stable/moodle
 ```
 
@@ -229,7 +228,7 @@ hub:
     OAUTH2_AUTHORIZE_URL: http://proxy-ip:5050/local/oauth/login.php?client_id=jupyterhub&response_type=code
   extraConfig:
         announcementConfig: |
-          c.JupyterHub.template_vars = {"announcement": "New here? <a href=''>Get help here</a>"}
+          c.JupyterHub.template_vars = {"announcement": "New here? <a href='#'>Get help here</a>"}
 proxy:
   secretToken: # generate this with `openssl rand -hex 32`
 auth:
@@ -247,19 +246,19 @@ auth:
       extra_params: {"scope":"user_info","client_id":"jupyterhub","client_secret":"secret-key"}
   admin:
     users:
-      - admin
+      - gpuadmin
     access: true
 singleuser:
   profileList:
     - display_name: "sutd.gpu.1xlarge"
-      description: "1 GPU, 16 cores and 128GB RAM. The <code>nvaitc/ai-lab</code> image provides TensorFlow, PyTorch and various data science packages, VS Code and a virtual desktop."
+      description: "1 GPU, 8 cores and 32GB RAM. The <code>nvaitc/ai-lab</code> image provides TensorFlow, PyTorch and various data science packages, VS Code and a virtual desktop."
       kubespawner_override:
-        image: nvaitc/ai-lab:19.08-vnc
+        image: nvaitc/ai-lab:20.01-vnc
         extra_resource_limits:
           nvidia.com/gpu: "1"
       default: true
     - display_name: "sutd.cpu.1xlarge"
-      description: "16 cores and 128GB RAM. The <code>jupyter/datascience-notebook</code> image provides various Python data science packages."
+      description: "8 cores and 32GB RAM. The <code>jupyter/datascience-notebook</code> image provides various Python data science packages."
       kubespawner_override:
         image: jupyter/datascience-notebook:latest
   storage:
@@ -273,10 +272,10 @@ singleuser:
   extraEnv:
     JUPYTER_ENABLE_LAB: "yes"
   memory:
-    limit: 256G
+    limit: 32G
     guarantee: 16G
   cpu:
-    limit: 24
+    limit: 16
     guarantee: 4
   networkPolicy:
     enabled: true
@@ -302,7 +301,7 @@ You'll need Helm (already configured in the previous step). Check for the latest
 helm repo add jupyterhub https://jupyterhub.github.io/helm-chart/
 helm repo update
 
-export RELEASE=0.9.0-alpha.1.104.d37322a
+export RELEASE=0.9.0-beta.3
 
 helm upgrade --install jhub jupyterhub/jupyterhub \
   --version=$RELEASE \
