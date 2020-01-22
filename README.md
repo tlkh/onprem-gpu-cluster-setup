@@ -19,6 +19,7 @@ This design assumes the Kubernetes cluster's physical network is isolated, with 
 
 * `proxy-ip:80` -> JupyterHub
 * `proxy-ip:5050` -> Moodle
+* `proxy-ip:3000` -> Grafana (monitoring dashboard)
 
 This is important as this will be part of the OAuth configuration (e.g. callback URL).
 
@@ -70,6 +71,11 @@ This section will deploy Kubernetes on the master node, and then provide you wit
 
 Reference: https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/create-cluster-kubeadm/
 
+```
+TODO:
+Change network plugin from Flannel to another which supports network security policies
+```
+
 **Part 1: Master Node**
 
 ```shell
@@ -91,18 +97,9 @@ kubectl taint nodes --all node-role.kubernetes.io/master-
 kubectl get pods --all-namespaces
 ```
 
-**Optional: deploy Kubernetes Dashboard**
-
-```shell
-kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.0.0-beta8/aio/deploy/recommended.yaml
-```
-
-For setup instructions, see: https://github.com/kubernetes/dashboard/wiki/Creating-sample-user
-
-
 **Part 2: Other Nodes**
 
-Run the join command (**included in output of `kubeadm init`** in the previous section).
+Run the join command (**included in output of `kubeadm init`** in the previous section). If you need to get the join command again, you can generate a new one with: `kubeadm token create --print-join-command`.
 
 Run `kubectl get nodes` as a sanity check. Every node should be in `Ready` state within 60s.
 
@@ -183,7 +180,7 @@ helm install \
 **Sanity Check**
 
 ```shell
-kubectl get storageclass -n kubeflow
+kubectl get storageclass
 ```
 
 ## Deploy Moodle
@@ -214,8 +211,6 @@ Install the Moodle OAuth plugin:
 2. Install by uploading the zip file at `Site administration > Plugins > Install plugins`
 3. Head over to `Site administration > Server > OAuth provider settings > Add new client` 
 4. Set callback URL to `http://proxy-ip/hub/oauth_callback`
-
-
 
 ## JupyterHub Setup
 
@@ -252,14 +247,14 @@ auth:
 singleuser:
   profileList:
     - display_name: "sutd.gpu.1xlarge"
-      description: "1 GPU, 4 cores and 32GB RAM. The <code>nvaitc/ai-lab</code> image provides TensorFlow, PyTorch and various data science packages, VS Code and a virtual desktop."
+      description: "1 GPU, 4 cores and 16GB RAM. The <code>nvaitc/ai-lab</code> image provides TensorFlow, PyTorch and various data science packages, VS Code and a virtual desktop."
       kubespawner_override:
         image: nvaitc/ai-lab:20.01-vnc
         extra_resource_limits:
           nvidia.com/gpu: "1"
       default: true
     - display_name: "sutd.cpu.1xlarge"
-      description: "4 cores and 32GB RAM. The <code>jupyter/datascience-notebook</code> image provides various Python data science packages."
+      description: "4 cores and 16GB RAM. The <code>jupyter/datascience-notebook</code> image provides various Python data science packages."
       kubespawner_override:
         image: jupyter/datascience-notebook:latest
   storage:
@@ -273,7 +268,7 @@ singleuser:
   extraEnv:
     JUPYTER_ENABLE_LAB: "yes"
   memory:
-    limit: 32G
+    limit: 16G
     guarantee: 8G
   cpu:
     limit: 6
@@ -409,8 +404,44 @@ This Nginx configuration will create the following proxy:
 * `proxy-ip:80` -> JupyterHub
 * `proxy-ip:5050` -> Moodle
 
+## Monitoring 
+
+We will deploy Prometheus and Grafana to set up our monitoring system and dashboard. The helm chart we are deploying is [`stable/prometheus-operator`](https://github.com/helm/charts/tree/master/stable/prometheus-operator), which will contain all the components we need.
+
+```shell
+helm install promop stable/prometheus-operator
+```
+
+After the deploy has completed, we can check to see if the Grafana pod is running.
+
+```shell
+$ kubectl get pods | grep grafana
+# you should see something like the following
+promop-grafana-5d8b84b688-9hrjr                          2/2     Running   0          16m
+```
+
+Now, we need to expose the Grafana pod so we can use the web interface. 
+
+```shell
+$ kubectl expose pod/promop-grafana-5d8b84b688-9hrjr --type=NodePort --name=grafana-service
+service/grafana-service exposed
+```
+
+You should now be able to see `grafana-service`. **We need to use the NodePort attached to port 3000.** In the example below, it is `30154`.
+
+```shell
+$ kubectl get services | grep grafana
+grafana-service                           NodePort       10.96.148.224   <none>        80:32181/TCP,3000:30154/TCP   19m
+promop-grafana                            ClusterIP      10.96.66.60     <none>        80/TCP                        20m
+```
+
+When you browse to `localhost:30154`, you will see the Grafana web UI. You can log in with the credentials `admin / prom-operator` and see the preconfigured dashboards. 
+
+![grafana](images/grafana.jpg)
+
+To remove the monitoring system and start over, run `helm delete promop` and additionally delete the service that you created.
+
 ## Finishing Steps
 
 * Configure Moodle users
-* Monitoring
 
