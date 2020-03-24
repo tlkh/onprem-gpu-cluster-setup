@@ -124,8 +124,8 @@ kubectl get nodes -o=custom-columns=NAME:.metadata.name,GPUs:.status.capacity.'n
 Before following the instructions, you can check for the latest version of Helm [here](https://github.com/helm/helm/releases). The instructions below work for Helm 3.x and not 2.x!
 
 ```shell
-wget https://get.helm.sh/helm-v3.0.2-linux-amd64.tar.gz
-tar -xvf helm-v3.0.2-linux-amd64.tar.gz linux-amd64/
+wget https://get.helm.sh/helm-v3.1.2-linux-amd64.tar.gz
+tar -xvf helm-v3.1.2-linux-amd64.tar.gz linux-amd64/
 chmod +x linux-amd64/helm
 sudo mv linux-amd64/helm /usr/local/bin/helm
 
