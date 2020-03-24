@@ -195,7 +195,7 @@ For more information on the helm chart, see [helm/charts/tree/master/stable/mood
 export MOODLE_ADMIN=admin
 export MOODLE_PASSWORD=password
 helm install \
-  --set moodleUsername=$MOODLE_ADMIN,moodlePassword=$MOODLE_PASSWORD,metrics.enabled=true,resources.requests.cpu=4,resources.requests.memory=2Gi,mariadb.requests.resources.cpu=4,mariadb.requests.resources.memory=2Gi moodle stable/moodle \
+  --set moodleUsername=$MOODLE_ADMIN,moodlePassword=$MOODLE_PASSWORD,metrics.enabled=true,resources.requests.cpu=4,resources.requests.memory=2Gi,mariadb.requests.resources.cpu=4,mariadb.requests.resources.memory=2Gi \
   moodle stable/moodle
 ```
 
